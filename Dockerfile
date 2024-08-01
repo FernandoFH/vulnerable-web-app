@@ -1,12 +1,12 @@
-FROM node:8
+FROM node:14
 
+WORKDIR /app
 
-COPY . .
-ADD server.js package*.json ./
+COPY package*.json ./
 RUN npm install
 
+COPY . .
+
 EXPOSE 8080
+CMD ["node", "server.js"]
 
-#ENTRYPOINT ["npm", "start"]
-
-CMD node server.js
