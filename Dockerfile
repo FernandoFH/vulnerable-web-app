@@ -1,12 +1,19 @@
-FROM node:8
+# Usa una imagen base de Node.js
+FROM node:18
 
+# Directorio de trabajo en el contenedor
+WORKDIR /app
 
+# Archivos al directorio de trabajo
 COPY . .
-ADD server.js package*.json ./
-RUN npm install
 
+# Instala las dependencias del proyecto
+RUN npm install
+RUN npm audit --production || echo "Existen vulnerabilidades, revísalas antes del despliegue"
+
+# Expone el puerto 8080
 EXPOSE 8080
 
-#ENTRYPOINT ["npm", "start"]
+# Comando de inicio de la aplicación
+CMD ["npm", "start"]
 
-CMD node server.js
