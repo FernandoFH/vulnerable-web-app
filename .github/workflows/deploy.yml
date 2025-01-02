@@ -1,19 +1,61 @@
-name: Deploy Vulnerable Application                                  # workflow name
+name: Deploy Vulnerable Application
 
 on:
   push:
     branches:
-      - master
+      - main
+
 jobs:
-  deploy-heroku:
-    name: Deploy Heroku
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+      # Paso 1: Checkout del código fuente
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Paso 2: Configurar Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "app-vulnerable2022" #Must be unique in Heroku
-          heroku_email: "roxsrossve@gmail.com"
-          remote_branch: "master"
-          usedocker: true
+          node-version: 18
+
+      # Paso 3: Instalar dependencias
+      - name: Install dependencies
+        run: npm install
+
+      # Paso 4: Construir y publicar imagen Docker en ECR
+      - name: Build and push Docker image to ECR
+        env:
+          AWS_REGION: "us-east-1"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          echo "Authenticating Docker client to Amazon ECR..."
+          aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws/j5w6k9l9
+          echo "Building the Docker image..."
+          docker build -t devsecops-demo .
+          echo "Tagging the Docker image for ECR..."
+          docker tag devsecops-demo:latest public.ecr.aws/j5w6k9l9/devsecops-demo:latest
+          echo "Pushing the Docker image to ECR..."
+          docker push public.ecr.aws/j5w6k9l9/devsecops-demo:latest
+
+  deploy-to-vercel:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 5: Checkout del código fuente
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Paso 6: Desplegar en Vercel
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "Installing Vercel CLI..."
+          npm install -g vercel
+          echo "Deploying to Vercel..."
+          vercel deploy --prod --token $VERCEL_TOKEN
+
