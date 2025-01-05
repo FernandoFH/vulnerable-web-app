@@ -46,13 +46,15 @@ jobs:
 
     steps:
       # Paso 5: Desplegar en Render
-      - name: Deploy to Render
+      - name: Install Render CLI
+        run: |
+          curl -L https://github.com/render-oss/cli/releases/download/v1.1.0/cli_1.1.0_linux_amd64.zip -o render.zip
+          unzip render.zip
+          sudo mv cli_v1.1.0 /usr/local/bin/render
+
+      - name: Trigger deploy with Render CLI
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          CI: true
         run: |
-          echo "Installing Render CLI..."
-          npm install -g render-cli
-          echo "Deploying to Render..."
-          render deploy-service --service-name devsecops-demo --region us-east-1 --docker-image public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest --api-key $RENDER_API_KEY --engine handlebars
-
-
+          render deploys create  ${{ secrets.RENDER_SERVICE_ID }}  --output json --confirm
