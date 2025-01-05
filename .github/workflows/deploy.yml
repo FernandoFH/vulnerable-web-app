@@ -1,4 +1,4 @@
-name: Deploy Vulnerable Application
+name: Deploy in Render Vulnerable Application 
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,8 +24,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Paso 4: Construir y publicar imagen Docker en ECR
-      - name: Build and push Docker image to ECR
+      # Paso 4: Construir la imagen Docker
+      - name: Build Docker image
+        run: |
+          echo "Building the Docker image..."
+          docker build -t devsecops-fernandoh .
+
+  push-to-ecr:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Checkout del código fuente
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Paso 2: Publicar la imagen en ECR
+      - name: Push Docker image to ECR
         env:
           AWS_REGION: "us-east-1"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -33,29 +48,23 @@ jobs:
         run: |
           echo "Authenticating Docker client to Amazon ECR..."
           aws ecr-public get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin public.ecr.aws/j5w6k9l9
-          echo "Building the Docker image..."
-          docker build -t devsecops-demo .
           echo "Tagging the Docker image for ECR..."
-          docker tag devsecops-demo:latest public.ecr.aws/j5w6k9l9/devsecops-demo:latest
+          docker tag devsecops-fernandoh:latest public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest
           echo "Pushing the Docker image to ECR..."
-          docker push public.ecr.aws/j5w6k9l9/devsecops-demo:latest
+          docker push public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest
 
-  deploy-to-vercel:
-    needs: build-and-push
+  deploy-to-render:
+    needs: push-to-ecr
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 5: Checkout del código fuente
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Paso 6: Desplegar en Vercel
-      - name: Deploy to Vercel
+      # Paso 1: Desplegar en Render
+      - name: Deploy to Render
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          echo "Installing Vercel CLI..."
-          npm install -g vercel
-          echo "Deploying to Vercel..."
-          vercel deploy --prod --token $VERCEL_TOKEN
+          echo "Installing Render CLI..."
+          npm install -g render-cli
+          echo "Deploying to Render..."
+          render deploy-service --service-name devsecops-fernandoh --region us-east-1 --docker-image public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest --api-key $RENDER_API_KEY
 
