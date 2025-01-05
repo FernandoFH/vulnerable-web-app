@@ -1,5 +1,5 @@
 # Usa una imagen base de Node.js
-FROM node:18
+FROM node:18-slim
 
 # Directorio de trabajo en el contenedor
 WORKDIR /app
