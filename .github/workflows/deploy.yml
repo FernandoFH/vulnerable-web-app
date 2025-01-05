@@ -53,5 +53,6 @@ jobs:
           echo "Installing Render CLI..."
           npm install -g render-cli
           echo "Deploying to Render..."
-          render deploy-service --service-name devsecops-fernandoh --region us-east-1 --docker-image public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest --api-key $RENDER_API_KEY
+          render deploy-service --service-name devsecops-fernandoh --region us-east-1 --docker-image public.ecr.aws/j5w6k9l9/devsecops-fernandoh:latest --api-key $RENDER_API_KEY --engine handlebars
+
 
